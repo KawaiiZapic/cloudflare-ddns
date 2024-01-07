@@ -59,7 +59,7 @@ def getIPs():
     if ipv4_enabled:
         try:
             a = requests.get(
-                "https://1.1.1.1/cdn-cgi/trace").text.split("\n")
+                "https://1.1.1.1/cdn-cgi/trace", timeout=timeout).text.split("\n")
             a.pop()
             a = dict(s.split("=") for s in a)["ip"]
         except Exception:
@@ -70,7 +70,7 @@ def getIPs():
             # Try secondary IP check
             try:
                 a = requests.get(
-                    "https://1.0.0.1/cdn-cgi/trace").text.split("\n")
+                    "https://1.0.0.1/cdn-cgi/trace", timeout=timeout).text.split("\n")
                 a.pop()
                 a = dict(s.split("=") for s in a)["ip"]
             except Exception:
@@ -83,7 +83,7 @@ def getIPs():
     if ipv6_enabled:
         try:
             aaaa = requests.get(
-                "https://[2606:4700:4700::1111]/cdn-cgi/trace").text.split("\n")
+                "https://[2606:4700:4700::1111]/cdn-cgi/trace", timeout=timeout).text.split("\n")
             aaaa.pop()
             aaaa = dict(s.split("=") for s in aaaa)["ip"]
         except Exception:
@@ -93,7 +93,7 @@ def getIPs():
                 print("🧩 IPv6 not detected via 1.1.1.1, trying 1.0.0.1")
             try:
                 aaaa = requests.get(
-                    "https://[2606:4700:4700::1001]/cdn-cgi/trace").text.split("\n")
+                    "https://[2606:4700:4700::1001]/cdn-cgi/trace", timeout=timeout).text.split("\n")
                 aaaa.pop()
                 aaaa = dict(s.split("=") for s in aaaa)["ip"]
             except Exception:
@@ -220,11 +220,11 @@ def cf_api(endpoint, method, config, headers={}, data=False):
     try:
         if (data == False):
             response = requests.request(
-                method, "https://api.cloudflare.com/client/v4/" + endpoint, headers=headers)
+                method, "https://api.cloudflare.com/client/v4/" + endpoint, headers=headers, timeout=timeout)
         else:
             response = requests.request(
                 method, "https://api.cloudflare.com/client/v4/" + endpoint,
-                headers=headers, json=data)
+                headers=headers, json=data, timeout=timeout)
 
         if response.ok:
             return response.json()
@@ -288,6 +288,11 @@ if __name__ == '__main__':
         if ttl < 30:
             ttl = 1  #
             print("⚙️ TTL is too low - defaulting to 1 (auto)")
+        try:
+            timeout = int(config["timeout"])
+        except:
+            timeout = 30
+            print("⚙️ No config detected for 'timeout' - defaulting to %d seconds", timeout)
         if (len(sys.argv) > 1):
             if (sys.argv[1] == "--repeat"):
                 if ipv4_enabled and ipv6_enabled:
